@@ -1,0 +1,9 @@
+fastapi
+transformers
+soundfile
+uvicorn
+pyttsx3
+datasets
+langdetect
+torch
+torchaudio
