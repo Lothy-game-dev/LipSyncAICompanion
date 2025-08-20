@@ -3,6 +3,7 @@ from datasets import load_dataset
 import torch
 import torchaudio
 from voice_type import VoiceType
+import os
 
 dataset = load_dataset(
     "hf-internal-testing/librispeech_asr_demo", "clean", split="validation"
@@ -29,7 +30,9 @@ with torch.no_grad():
     if speech_np.ndim == 1:
         speech_np = speech_np[None, :]  # Add batch/channel dimension
     torchaudio.save("test.wav", torch.from_numpy(speech_np), 16000)
-    print("Saved speech to test.wav")
+    print("Preloaded speecht5 model")
+    if os.path.exists("test.wav"):
+        os.remove("test.wav")
     
 def speecht5_tts(text, lang, filename):
     inputs = processor(text=text, return_tensors="pt")
@@ -42,3 +45,8 @@ def speecht5_tts(text, lang, filename):
         if speech_np.ndim == 1:
             speech_np = speech_np[None, :]  # Add batch/channel dimension
         torchaudio.save(filename, torch.from_numpy(speech_np), 16000)
+        
+    if os.path.exists(filename):
+        print(f"WAV file created: {filename}")
+    else:
+        print("Failed to generate speech.")

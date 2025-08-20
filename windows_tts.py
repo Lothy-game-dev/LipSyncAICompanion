@@ -1,6 +1,7 @@
 import pyttsx3
 import random
 from voice_type import VoiceType
+import os
 
 engine = pyttsx3.init()
 list_all_voices_windows_default = []
@@ -27,3 +28,8 @@ def windows_default_tts(text, lang, filename):
         engine.setProperty('voice', list_suitable_voices_female[random.randint(0, len(list_suitable_voices_female) - 1)].id)
     engine.save_to_file(text, filename)
     engine.runAndWait()
+    
+    if os.path.exists(filename):
+        print(f"WAV file created: {filename}")
+    else:
+        print("Failed to generate speech.")

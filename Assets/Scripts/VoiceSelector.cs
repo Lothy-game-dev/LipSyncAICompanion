@@ -37,7 +37,7 @@ public class VoiceSelector : MonoBehaviour
 
     IEnumerator SelectVoice()
     {
-        string url = "https://c6d7b0744907.ngrok-free.app/select_voice?voice=" + VoiceName;
+        string url = "http://localhost:8000/select_voice?voice=" + VoiceName;
         UnityWebRequest request = UnityWebRequest.Get(url);
         yield return request.SendWebRequest();
         if (request.result != UnityWebRequest.Result.Success)

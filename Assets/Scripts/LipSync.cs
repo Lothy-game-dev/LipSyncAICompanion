@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using TMPro;
 using System.IO;
+using System.Text.RegularExpressions;
 
 public class LipSync : MonoBehaviour
 {
@@ -42,8 +43,8 @@ public class LipSync : MonoBehaviour
     public IEnumerator GetVisemes(string text)
     {
         string fileName = "speech_" + System.DateTime.Now.ToString("yyyyMMddHHmmss") + ".wav";
-        string ttsurl = "https://c6d7b0744907.ngrok-free.app/text_to_speech?text=" + UnityWebRequest.EscapeURL(text) + "&input_file_name=" + fileName;
-        string visemesurl = "https://c6d7b0744907.ngrok-free.app/text_to_visemes?text=" + UnityWebRequest.EscapeURL(text) + "&input_file_name=" + fileName;
+        string ttsurl = "http://localhost:8000/text_to_speech?text=" + UnityWebRequest.EscapeURL(text) + "&input_file_name=" + fileName;
+        string visemesurl = "http://localhost:8000/text_to_visemes?text=" + UnityWebRequest.EscapeURL(text) + "&input_file_name=" + fileName;
 
         // 1. Call API
         UnityWebRequest request = UnityWebRequest.Get(ttsurl);
@@ -103,31 +104,36 @@ public class LipSync : MonoBehaviour
         }
 
         // 4. Drive viseme timeline
-        string fullText = text;
-        float delay = audioLength / Visemes.Count;
-        while (CurrentVisemeIndex < Visemes.Count)
+        string fullText = Regex.Replace(text, @"\s+", " ").Replace("\n", ". "); 
+        // Reset mouth when done
+        while (AudioSource.isPlaying && CurrentVisemeIndex < Visemes.Count)
         {
-            VisemeImage.sprite = VisemeSprites[Visemes[CurrentVisemeIndex] - 1];
+            float progress = AudioSource.time / audioLength;
+            int expectedIndex = Mathf.FloorToInt(progress * Visemes.Count);
 
-            FinalText += CharMapping[CurrentVisemeIndex];
-            int index = fullText.IndexOf(CharMapping[CurrentVisemeIndex]);
-            if (index >= 0) fullText = fullText.Remove(index, CharMapping[CurrentVisemeIndex].Length);
-
-            if (fullText.Length > 0 && fullText[0] == ' ')
+            while (CurrentVisemeIndex <= expectedIndex && CurrentVisemeIndex < Visemes.Count)
             {
-                fullText = fullText.Substring(1);
-                FinalText += " ";
-            }
+                int viseme = Visemes[CurrentVisemeIndex];
+                VisemeImage.sprite = VisemeSprites[viseme - 1];
 
-            TextMesh.text = FinalText;
-            CurrentVisemeIndex++;
+                int index = fullText.IndexOf(CharMapping[CurrentVisemeIndex]);
+                if (index >= 0) fullText = fullText.Remove(index, CharMapping[CurrentVisemeIndex].Length);
+                FinalText += CharMapping[CurrentVisemeIndex];
+                if (fullText.Length > 0 && fullText[0] == ' ')
+                {
+                    fullText = fullText.Substring(1);
+                    FinalText += " ";
+                }
+
+                TextMesh.text = FinalText;
+
+                CurrentVisemeIndex++;
+            }
             
-            if (CurrentVisemeIndex >= Visemes.Count)
-            {
-                VisemeImage.sprite = VisemeSprites[7]; // rest mouth
-            }
-            yield return new WaitForSeconds(delay);
+            yield return null;
         }
+
+        VisemeImage.sprite = VisemeSprites[7];
     }
 
     public void SelectCharacter(string character)

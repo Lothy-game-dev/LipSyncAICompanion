@@ -163,6 +163,7 @@ def stop_task(task_name: str):
 @app.get("/text_to_speech")
 def text_to_speech(text: str, input_file_name: str):
     lang = detect(text)
+    text = text.replace("\n", ". ").replace(r"\s+", " ")
     print("Language: ", lang)
     static_dir = os.path.join("Assets", "StreamingAssets", "static")
     if not os.path.exists(static_dir):

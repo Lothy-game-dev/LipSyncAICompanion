@@ -29,7 +29,7 @@ public class VoiceSelectSection : MonoBehaviour
 
     IEnumerator InitVoice()
     {
-        string url = "https://c6d7b0744907.ngrok-free.app/list_voices";
+        string url = "http://localhost:8000/list_voices";
         UnityWebRequest request = UnityWebRequest.Get(url);
         yield return request.SendWebRequest();
         if (request.result != UnityWebRequest.Result.Success)

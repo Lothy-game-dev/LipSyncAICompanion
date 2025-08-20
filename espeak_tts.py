@@ -48,7 +48,7 @@ def espeak_tts(text, lang, filename, rate=150):
     # Build espeak-ng command
     command = (
         fr'"espeak-ng" '
-        f'-v {voice.lang}+f{random.randint(1, 5)} '
+        f'-v {voice.lang}+f2 '
         f'-s {rate} '
         f'-w "{filename}" '
         f'"{text}"'
