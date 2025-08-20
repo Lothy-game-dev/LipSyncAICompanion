@@ -14,7 +14,10 @@ from speecht5_tts import speecht5_tts
 from concurrent.futures import ProcessPoolExecutor
 import concurrent.futures
 
+from fastapi.responses import FileResponse
+
 executor = ProcessPoolExecutor()
+
 # --- Init ---
 app = FastAPI(docs_url="/docs", redoc_url=None)
 os.makedirs("Assets\\StreamingAssets\\static", exist_ok=True)
@@ -84,7 +87,7 @@ def text_to_visemes_func(text, lang):
 
     def get_pronunciation(word):
         espeak_voices = subprocess.run(
-            r'"C:\Program Files\eSpeak NG\espeak-ng.exe" --ipa -q --pho "' + word + '"',
+            r'"espeak-ng" --ipa -q --pho "' + word + '"',
             capture_output=True,
             text=True,
             shell=True,
@@ -192,7 +195,6 @@ def text_to_visemes(text: str, input_file_name:str):
         "visemes": visemes,
         "char_mapping": char_mapping,
         "all_chars": all_chars,
-        "task_name": task_name
     }
 
 if __name__ == "__main__":

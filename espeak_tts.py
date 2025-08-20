@@ -5,7 +5,7 @@ from voice_type import VoiceType
 
 # Get list of voices
 result = subprocess.run(
-    r'"C:\Program Files\eSpeak NG\espeak-ng.exe" --voices',
+    r'"espeak-ng" --voices',
     capture_output=True,
     text=True,
     shell=True,
@@ -47,7 +47,7 @@ def espeak_tts(text, lang, filename, rate=150):
         voice = list_suitable_voices_female[random.randint(0, len(list_suitable_voices_female) - 1)]
     # Build espeak-ng command
     command = (
-        fr'"C:\Program Files\eSpeak NG\espeak-ng.exe" '
+        fr'"espeak-ng" '
         f'-v {voice.lang}+f{random.randint(1, 5)} '
         f'-s {rate} '
         f'-w "{filename}" '
