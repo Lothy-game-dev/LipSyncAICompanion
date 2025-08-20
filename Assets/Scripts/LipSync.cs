@@ -42,31 +42,46 @@ public class LipSync : MonoBehaviour
     public IEnumerator GetVisemes(string text)
     {
         string fileName = "speech_" + System.DateTime.Now.ToString("yyyyMMddHHmmss") + ".wav";
-        string url = "http://localhost:8000/text_to_visemes?text=" + UnityWebRequest.EscapeURL(text) + "&input_file_name=" + fileName;
+        string ttsurl = "https://c6d7b0744907.ngrok-free.app/text_to_speech?text=" + UnityWebRequest.EscapeURL(text) + "&input_file_name=" + fileName;
+        string visemesurl = "https://c6d7b0744907.ngrok-free.app/text_to_visemes?text=" + UnityWebRequest.EscapeURL(text) + "&input_file_name=" + fileName;
 
         // 1. Call API
-        UnityWebRequest request = UnityWebRequest.Get(url);
+        UnityWebRequest request = UnityWebRequest.Get(ttsurl);
         yield return request.SendWebRequest();
         if (request.result != UnityWebRequest.Result.Success)
         {
             Debug.LogError(request.error);
             yield break;
         }
+        string filePath = Path.Combine(Application.streamingAssetsPath, "static/" + fileName).Replace("\\", "/");
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            // Save file locally
+            File.WriteAllBytes(filePath, request.downloadHandler.data);
+            Debug.Log($"File successfully downloaded to: {filePath}");
 
-        var wrapper = JsonUtility.FromJson<VisemeResponse>(request.downloadHandler.text);
+            // Wait until audio file is written
+            Debug.Log(filePath);
+            while (!File.Exists(filePath))
+            {
+                yield return null; // wait one frame
+            }
+        }
+
+        UnityWebRequest request3 = UnityWebRequest.Get(visemesurl);
+        yield return request3.SendWebRequest();
+        if (request3.result != UnityWebRequest.Result.Success)
+        {
+            Debug.LogError(request3.error);
+            yield break;
+        }
+
+        var wrapper = JsonUtility.FromJson<VisemeResponse>(request3.downloadHandler.text);
         Visemes = wrapper.visemes;
         CharMapping = wrapper.char_mapping;
         
         CurrentVisemeIndex = 0;
         FinalText = "";
-
-        // 2. Wait until audio file is written
-        string filePath = Path.Combine(Application.streamingAssetsPath, "static/" + fileName).Replace("\\", "/");
-        Debug.Log(filePath);
-        while (!File.Exists(filePath))
-        {
-            yield return null; // wait one frame
-        }
 
         // 3. Load audio from file (not Resources.Load!)
         string fileUri = new System.Uri(filePath).AbsoluteUri;
@@ -82,16 +97,6 @@ public class LipSync : MonoBehaviour
             }
 
             AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
-            string url2 = "http://localhost:8000/stop-task/" + wrapper.task_name;
-
-            // 1. Call API
-            UnityWebRequest request2 = UnityWebRequest.Get(url2);
-            yield return request2.SendWebRequest();
-            if (request2.result != UnityWebRequest.Result.Success)
-            {
-                Debug.LogError(request2.error);
-                yield break;
-            }
             AudioSource.clip = clip;
             audioLength = clip.length;
             AudioSource.Play();

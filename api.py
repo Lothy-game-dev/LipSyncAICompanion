@@ -1,5 +1,5 @@
 from fastapi import FastAPI, BackgroundTasks
-# from transformers import pipeline
+from fastapi.responses import FileResponse
 import soundfile as sf
 import os
 import uvicorn
@@ -157,13 +157,14 @@ def stop_task(task_name: str):
     processes[task_name].cancel()
     return {"status": f"Task {task_name} was already finished."}
 
-@app.get("/text_to_visemes")
-def text_to_visemes(text: str, input_file_name:str):
+@app.get("/text_to_speech")
+def text_to_speech(text: str, input_file_name: str):
     lang = detect(text)
     print("Language: ", lang)
-    if not os.path.exists(os.path.join("Assets", "StreamingAssets", "static")):
-        os.makedirs(os.path.join("Assets", "StreamingAssets", "static"))
-    save_path = os.path.join("Assets", "StreamingAssets", "static", f"{input_file_name}")
+    static_dir = os.path.join("Assets", "StreamingAssets", "static")
+    if not os.path.exists(static_dir):
+        os.makedirs(static_dir)
+    save_path = os.path.join(static_dir, f"{input_file_name}")
     print("Current chosen voice: ", current_chosen_voice)
     if current_chosen_voice == Voice.WINDOWS_DEFAULT:
         future = executor.submit(windows_default_tts, text, lang, save_path)
@@ -171,19 +172,28 @@ def text_to_visemes(text: str, input_file_name:str):
         future = executor.submit(speecht5_tts, text, lang, save_path)
     else:
         future = executor.submit(espeak_tts, text, lang, save_path)
+    
+    future.result()
+    # Return the file as a downloadable attachment
+    return FileResponse(
+        save_path,
+        filename=input_file_name,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{input_file_name}"'}
+    )
 
-    task_name = f"process_{input_file_name}"
-    processes[task_name] = future
 
+@app.get("/text_to_visemes")
+def text_to_visemes(text: str, input_file_name:str):
+    lang = detect(text)
     phonemes, visemes, char_mapping, all_chars = text_to_visemes_func(text, lang)
     return {
         "phonemes": phonemes,
         "visemes": visemes,
         "char_mapping": char_mapping,
         "all_chars": all_chars,
-        "audio_file": save_path,
         "task_name": task_name
     }
 
 if __name__ == "__main__":
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("api:app", host="0.0.0.0", port=8000)
